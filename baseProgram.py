@@ -1,46 +1,85 @@
-import time
+import time, pyaudio,string,serial
 from multiprocessing import Process
 import requests
-
+import getmac
+import pynmea2
+import speech_recognition as sr
 import Adafruit_DHT
 
+# DHT22
 SERVER_IP = '192.168.0.104'
 DHT_SENSOR = Adafruit_DHT.DHT22
 DHT_PIN = 4
-API_URL = 'http://' + SERVER_IP + '/insertData'
+API_URL = 'http://' + SERVER_IP
+SEND_DATA = '/insertData'
+RAISE_ALERT = '/raiseAlert'
+
+# NEO 6M GPS
+PORT = '/dev/ttyS0'
+SERIAL = serial.Serial(PORT,baudrate=9600,timeout=0.5)
+
+# Speech Recognition
+RECOGNIZER = sr.Recognizer()
+
+def getData_NEO6M():
+	serialRow = SERIAL.readline().decode('utf-8')
+	if (serialRow[0:6] == '$GPRMC'):
+		parsedSerialRow = pynmea2.parse(serialRow)
+		return {
+			'latitude' : parsedSerialRow.latitude,
+			'longitude': parsedSerialRow.longitude
+		}
 
 def getData_DHT22():
 	h,t = Adafruit_DHT.read_retry(DHT_SENSOR, DHT_PIN)
 	return {'temperature':t,'humidity':h}
 
-def runInParallel(*fns):
-  proc = []
-  for fn in fns:
-    p = Process(target=fn)
-    p.start()
-    proc.append(p)
-  for p in proc:
-    p.join()
+def parallelRun(*procs):
+  thread = []
+  for process in procs:
+    p = Process(target=process).start()
+    thread.append(p)
+  for process in thread:
+    process.join()
 
-def p1():
+def p1(): # Data aquire , server communication
 	idx = 0
-	postData = {'temperature':[],'humidity':[]}
+	postData = {
+		'device_key' : getmac.get_mac_address(),
+		'data' : {
+			'temperature': None,
+			'humidity': None,
+			'latitude': None,
+			'longitude': None
+		}
+	}
 	while True:
-		print("P1")
-		idx += 1
-		tmp = getData_DHT22()
-		postData['temperature'].append(tmp['temperature'])
-		postData['humidity'].append(tmp['humidity'])
-		if (idx >= 10):
-			requests.post(API_URL,postData)
-			idx = 0
-			postData = {'temperature':[],'humidity':[]}
-		time.sleep(60) # Acquire data every 60 seconds, send them every 10 minutes
+		print("Data aquire process active !")
 
-def p2():
-	while True:
-		print("P2")
-		time.sleep(30)
+		tmp = getData_DHT22()
+		gps = getData_NEO6M()
+
+		postData['data']['temperature'] = tmp['temperature']
+		postData['data']['humidity'] = tmp['humidity']
+		postData['data']['latitude'] = gps['latitude']
+		postData['data']['longitude'] = gps['longitude']
+
+		requests.post(API_URL+SEND_DATA,json=postData) # Send data and reset for next data set
+
+		time.sleep(600) # Acquire data every 60 seconds, send them every 10 minutes
+	
+
+def p2(): # Voice managing
+	with sr.Microphone as ainput:
+		while True:
+			RECOGNIZER.adjust_for_ambient_noise(ainput,duration=5)
+			voiceSignal = RECOGNIZER.listen(ainput)
+			message = RECOGNIZER.recognize_google(voiceSignal,language='ro-RO')
+			if (message == 'ajutor'):
+				bodyMessage = {
+					'device_key': getmac.get_mac_address(),
+				}
+				requests.post(API_URL+RAISE_ALERT,json=bodyMessage)
 
 if __name__ == '__main__':
 	runInParallel(p1,p2)
