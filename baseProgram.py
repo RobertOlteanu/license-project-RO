@@ -82,4 +82,4 @@ def p2(): # Voice managing
 				requests.post(API_URL+RAISE_ALERT,json=bodyMessage)
 
 if __name__ == '__main__':
-	runInParallel(p1,p2)
+	parallelRun(p1,p2)
