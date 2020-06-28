@@ -39,8 +39,8 @@ def parallelRun(*procs):
   for process in procs:
     p = Process(target=process).start()
     thread.append(p)
-  for process in thread:
-    process.join()
+  for p in thread:
+    p.join()
 
 def p1(): # Data aquire , server communication
 	idx = 0
@@ -58,28 +58,35 @@ def p1(): # Data aquire , server communication
 
 		tmp = getData_DHT22()
 		gps = getData_NEO6M()
-
+		print(gps)
 		postData['data']['temperature'] = tmp['temperature']
 		postData['data']['humidity'] = tmp['humidity']
-		postData['data']['latitude'] = gps['latitude']
-		postData['data']['longitude'] = gps['longitude']
+		try:
+			postData['data']['latitude'] = gps['latitude']
+			postData['data']['longitude'] = gps['longitude']
+		except:
+			pass
 
 		requests.post(API_URL+SEND_DATA,json=postData) # Send data and reset for next data set
 
-		time.sleep(600) # Acquire data every 60 seconds, send them every 10 minutes
+		time.sleep(60) # Acquire data every 60 seconds, send them every 10 minutes
 	
 
 def p2(): # Voice managing
-	with sr.Microphone as ainput:
-		while True:
-			RECOGNIZER.adjust_for_ambient_noise(ainput,duration=5)
-			voiceSignal = RECOGNIZER.listen(ainput)
-			message = RECOGNIZER.recognize_google(voiceSignal,language='ro-RO')
-			if (message == 'ajutor'):
-				bodyMessage = {
-					'device_key': getmac.get_mac_address(),
-				}
-				requests.post(API_URL+RAISE_ALERT,json=bodyMessage)
+	try:
+		with sr.Microphone as ainput:
+			while True:
+				RECOGNIZER.adjust_for_ambient_noise(ainput,duration=5)
+				voiceSignal = RECOGNIZER.listen(ainput)
+				message = RECOGNIZER.recognize_google(voiceSignal,language='ro-RO')
+				if (message == 'ajutor'):
+					bodyMessage = {
+						'device_key': getmac.get_mac_address(),
+					}
+					requests.post(API_URL+RAISE_ALERT,json=bodyMessage)
+	except:
+		# Raise no mic detected alert
+		pass
 
 if __name__ == '__main__':
 	parallelRun(p1,p2)
