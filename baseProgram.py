@@ -63,12 +63,13 @@ def p1(): # Data aquire , server communication
 		print(gps)
 		postData['data']['temperature'] = tmp['temperature']
 		postData['data']['humidity'] = tmp['humidity']
+		'''
 		try:
 			postData['data']['latitude'] = gps['latitude']
 			postData['data']['longitude'] = gps['longitude']
 		except:
 			pass
-
+		'''
 		#requests.post(API_URL+SEND_DATA,json=postData) # Send data and reset for next data set
 		response = requests.get(API_URL+GET_ALERTS)
 		content = response.content.decode('utf-8')
