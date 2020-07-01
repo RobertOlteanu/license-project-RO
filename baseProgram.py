@@ -59,7 +59,7 @@ def p1(): # Data aquire , server communication
 		print("Data aquire process active !")
 
 		tmp = getData_DHT22()
-		gps = getData_NEO6M()
+		#gps = getData_NEO6M()
 		print(gps)
 		postData['data']['temperature'] = tmp['temperature']
 		postData['data']['humidity'] = tmp['humidity']
@@ -72,7 +72,7 @@ def p1(): # Data aquire , server communication
 		#requests.post(API_URL+SEND_DATA,json=postData) # Send data and reset for next data set
 		response = requests.get(API_URL+GET_ALERTS)
 		print(response)
-		
+
 		time.sleep(60) # Acquire data every 60 seconds, send them every 10 minutes
 	
 
