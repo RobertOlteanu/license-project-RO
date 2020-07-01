@@ -71,8 +71,12 @@ def p1(): # Data aquire , server communication
 
 		#requests.post(API_URL+SEND_DATA,json=postData) # Send data and reset for next data set
 		response = requests.get(API_URL+GET_ALERTS)
-		print(response)
-
+		content = response.content.decode('utf-8')
+		print(content)
+		for item in content['data']:
+			f = s2p(item['desc'],lang='ro')
+			f.save(item['cod']+'.mp3')
+			os.system('mpg321 -a plughw ' + item['cod'] +'.mp3')
 		time.sleep(60) # Acquire data every 60 seconds, send them every 10 minutes
 	
 
