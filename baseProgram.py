@@ -5,6 +5,7 @@ import getmac
 import pynmea2
 import speech_recognition as sr
 import Adafruit_DHT
+from gtts import gTTS as s2t
 
 # DHT22
 SERVER_IP = '192.168.0.104'
@@ -13,6 +14,7 @@ DHT_PIN = 4
 API_URL = 'http://' + SERVER_IP
 SEND_DATA = '/insertData'
 RAISE_ALERT = '/raiseAlert'
+GET_ALERTS = '/getalerts'
 
 # NEO 6M GPS
 PORT = '/dev/ttyS0'
@@ -67,8 +69,10 @@ def p1(): # Data aquire , server communication
 		except:
 			pass
 
-		requests.post(API_URL+SEND_DATA,json=postData) # Send data and reset for next data set
-
+		#requests.post(API_URL+SEND_DATA,json=postData) # Send data and reset for next data set
+		response = requests.get(API_URL+GET_ALERTS)
+		print(response)
+		
 		time.sleep(60) # Acquire data every 60 seconds, send them every 10 minutes
 	
 
