@@ -60,7 +60,7 @@ def p1(): # Data aquire , server communication
 
 		tmp = getData_DHT22()
 		#gps = getData_NEO6M()
-		print(gps)
+		#print(gps)
 		postData['data']['temperature'] = tmp['temperature']
 		postData['data']['humidity'] = tmp['humidity']
 		'''
