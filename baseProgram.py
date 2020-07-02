@@ -6,7 +6,7 @@ import pynmea2
 import speech_recognition as sr
 import Adafruit_DHT
 from gtts import gTTS as s2t
-
+import json,os
 # DHT22
 SERVER_IP = '192.168.0.104'
 DHT_SENSOR = Adafruit_DHT.DHT22
@@ -59,23 +59,24 @@ def p1(): # Data aquire , server communication
 		print("Data aquire process active !")
 
 		tmp = getData_DHT22()
-		#gps = getData_NEO6M()
-		#print(gps)
+		gps = getData_NEO6M()
+		print(gps)
 		postData['data']['temperature'] = tmp['temperature']
 		postData['data']['humidity'] = tmp['humidity']
-		'''
+		
 		try:
 			postData['data']['latitude'] = gps['latitude']
 			postData['data']['longitude'] = gps['longitude']
 		except:
 			pass
-		'''
-		#requests.post(API_URL+SEND_DATA,json=postData) # Send data and reset for next data set
+		
+		requests.post(API_URL+SEND_DATA,json=postData) # Send data and reset for next data set
 		response = requests.get(API_URL+GET_ALERTS)
 		content = response.content.decode('utf-8')
 		print(content)
+		content = json.loads(content)
 		for item in content['data']:
-			f = s2p(item['desc'],lang='ro')
+			f = s2t(item['desc'],lang='ro')
 			f.save(item['cod']+'.mp3')
 			os.system('mpg321 -a plughw ' + item['cod'] +'.mp3')
 		time.sleep(60) # Acquire data every 60 seconds, send them every 10 minutes
